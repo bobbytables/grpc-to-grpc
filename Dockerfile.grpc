@@ -1,0 +1,12 @@
+FROM golang:alpine AS builder
+
+ADD . /go/src/github.com/namely/grpc-to-grpc
+WORKDIR /go/src/github.com/namely/grpc-to-grpc
+RUN go build -o /usr/local/bin/joke-grpc ./cmd/grpc
+
+FROM alpine
+COPY --from=builder /usr/local/bin/joke-grpc /usr/local/bin/joke-grpc
+
+ENV GRPC_PORT 50051
+
+CMD ["joke-grpc"]

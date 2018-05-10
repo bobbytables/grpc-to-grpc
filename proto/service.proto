@@ -1,0 +1,16 @@
+syntax = "proto3";
+
+import "google/api/annotations.proto";
+
+// Simple Joke service to retrieve random jokes
+message JokeReq {}
+
+message JokeResp {
+  string body = 1;
+}
+
+service Jokes {
+  rpc GetJoke(JokeReq) returns (JokeResp) {
+    option (google.api.http).get = "/v1/joke";
+  };
+}
