@@ -1,0 +1,6 @@
+FROM alpine:latest
+
+RUN apk add --update iptables
+ADD config/iptables.sh /iptables.sh
+
+CMD ["/iptables.sh"]

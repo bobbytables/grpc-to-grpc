@@ -1,0 +1,133 @@
+kind: Namespace
+apiVersion: v1
+metadata:
+  name: jokes
+---
+kind: Service
+apiVersion: v1
+metadata:
+  name: jokes-grpc
+  namespace: jokes
+spec:
+  clusterIP: "None"
+  selector:
+    app: jokes-grpc
+  ports:
+    - name: grpc
+      port: 50051
+
+---
+kind: Service
+apiVersion: v1
+metadata:
+  name: jokes-gw
+  namespace: jokes
+spec:
+  type: NodePort
+  selector:
+    app: jokes-gw
+  ports:
+    - name: grpc
+      port: 80
+---
+kind: Service
+apiVersion: v1
+metadata:
+  name: statsd
+  namespace: jokes
+spec:
+  type: NodePort
+  clusterIP: "10.108.152.81"
+  selector:
+    app: statsd
+  ports:
+    - name: statsd
+      port: 8125
+      protocol: UDP
+---
+kind: Deployment
+apiVersion: apps/v1
+metadata:
+  name: jokes-grpc
+  namespace: jokes
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: jokes-grpc
+  template:
+    metadata:
+      name: jokes-grpc
+      labels:
+        app: jokes-grpc
+    spec:
+      containers:
+        - name: jokes-grpc
+          imagePullPolicy: Never
+          image: bobbytables/jokes-grpc:latest
+          ports:
+            - containerPort: 50051
+---
+kind: Deployment
+apiVersion: apps/v1
+metadata:
+  name: jokes-gw
+  namespace: jokes
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: jokes-gw
+  template:
+    metadata:
+      name: jokes-gw
+      labels:
+        app: jokes-gw
+    spec:
+      initContainers:
+        - name: proxy-init
+          imagePullPolicy: Never
+          image: bobbytables/envoy-minikube-init:latest
+          securityContext:
+            privileged: true
+      containers:
+        - name: jokes-gw
+          imagePullPolicy: Never
+          image: bobbytables/jokes-gw:latest
+          ports:
+            - containerPort: 50051
+          env:
+            - name: GRPC_ADDR
+              value: "jokes-grpc:50051"
+        - name: envoy
+          image: bobbytables/envoy-minikube-test:latest
+          imagePullPolicy: Never
+          securityContext:
+            privileged: true
+            runAsUser: 1337
+            capabilities:
+              add:
+              - NET_ADMIN
+---
+kind: Deployment
+apiVersion: apps/v1
+metadata:
+  name: statsd
+  namespace: jokes
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: statsd
+  template:
+    metadata:
+      name: statsd
+      labels:
+        app: statsd
+    spec:
+      containers:
+        - name: statsd
+          imagePullPolicy: IfNotPresent
+          image: macat/statsd-dev:latest
+          ports:
+            - containerPort: 8125

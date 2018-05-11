@@ -1,0 +1,9 @@
+FROM envoyproxy/envoy-alpine:latest
+
+# Change the group ID on the envoy binary so we can route traffic with IPTables
+# accordingly
+RUN apk add --update shadow iptables
+RUN groupadd envoy-proxy -g 1337
+RUN useradd envoy-proxy -g 1337 -u 1337 -M 
+RUN chgrp 1337 /usr/local/bin/envoy
+COPY config/envoy-minikube.yml /etc/envoy/envoy.yaml
