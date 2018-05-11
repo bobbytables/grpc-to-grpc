@@ -30,6 +30,8 @@ static_resources:
     type: STRICT_DNS
     lb_policy: ROUND_ROBIN
     hosts: [{ socket_address: { address: jokes-grpc, port_value: 50051 }}]
+    # This is needed to force an HTTP2 connection
+    http2_protocol_options: {}
 
 stats_sinks:
   - name: "envoy.dog_statsd"
